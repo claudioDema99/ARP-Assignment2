@@ -123,6 +123,8 @@ int main(int argc, char const *argv[])
     int x_cord[600];
     int y_cord[600];
     int y;
+    int y_old;
+    int x_old;
 
     // Flag
     int flag ;
@@ -234,11 +236,15 @@ int main(int argc, char const *argv[])
             // Signal the semaphore 1
             sem_post(semaphore);
 
-            //da sistemare
+            // Cancel the circle with the coordinates of the previous loop
+            cancel_blue_circle(30,y_old,x_old,bmp);
 
-            // cancel_blue_circle(30,y_cord[y-1],center_cord,bmp);
+            // Draw the circle with the coordinates of the current loop
+            draw_blue_circle(30,y_cord[y-1],center_cord,bmp);   
 
-            // draw_blue_circle(30,y_cord[y-1],center_cord,bmp);              
+            // Update the (previous) coordinates for the next loop
+            y_old = y_cord[y-1];
+            x_old = center_cord;           
         }
          
     }
