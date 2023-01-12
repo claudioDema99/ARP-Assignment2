@@ -2,7 +2,7 @@
 ## Description of the programs
 The project consists in the implementation of the simulated vision system through shared memory, according to the requirements specified in the PDF file of the assignment.
 
-The two processes involved in the simulation of the vision system, namely **processA** and **processB**, implemented as simple *ncurses windows*, communicates through each others with an inter-process communication pipeline, that is the shared memory.
+The two processes involved in the simulation of the vision system, implemented as simple *ncurses windows*, are called **processA** and **processB** and they communicate each others with an inter-process communication pipeline, that is the shared memory.
 
 There is also a **master** process already prepared for you, responsible of spawning the entire simulation.
 
