@@ -1,3 +1,8 @@
+// Group: CDGG
+// Authors:
+// Claudio Demaria S5433737
+// Gianluca Galvagni S5521188
+
 #include "./../include/processB_utilities.h"
 #include <stdio.h>
 #include <stdlib.h>
