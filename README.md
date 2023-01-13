@@ -4,7 +4,7 @@ The project consists in the implementation of the simulated vision system throug
 
 The two processes involved in the simulation of the vision system, implemented as simple *ncurses windows*, are called **processA** and **processB** and they communicate each others with an inter-process communication pipeline, that is the shared memory (SHM).  
 The user can control the *marker* in the **processA** window using the keyboard arrow, and in the **processB** window are printed the trajectory of the movement.  
-There is also a *print button*: when the user click on it with the mouse, the program prints a .png image of the current position of the marker, and put this image into the *out* folder.
+There is also a **print button**: when the user click on it with the mouse, the program prints a *.png* image of the current position of the *marker*, and put this image into the *out* folder.
 
 There is also a **master** process already prepared for you, responsible of spawning the entire simulation.
 
