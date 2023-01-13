@@ -91,6 +91,7 @@ int watchdog()
       // Kill all the processes
       kill(pid_procA, SIGKILL);
       kill(pid_procB, SIGKILL);
+      printf("Processes killed by the watchdog\n");
       return 0;
     }
 
