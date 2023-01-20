@@ -20,14 +20,20 @@
 #include <errno.h>
 
 // Define the size of the shared memory
-const int width = 1600;
-const int height = 600;
-const int depth = 4;
+const int WIDTH = 1600;
+const int HEIGHT = 600;
+const int DEPTH = 4;
+
+// Set the color of the circle (0 - 255)
+const u_int8_t red = 0;
+const u_int8_t green = 0;
+const u_int8_t blue = 255;
+const u_int8_t alpha = 0;
 
 // Define the struct of the shared memory
 struct shared
 {
-    int m[1600][600];
+    int m[WIDTH][HEIGHT];
 };
 
 // Define the semaphores
@@ -40,39 +46,39 @@ char log_buffer[100];
 // File descriptor for the log file
 int log_fd;
 
-// Function to draw the blue circle
-void draw_blue_circle(int radius,int x,int y, bmpfile_t *bmp) {
-    // Define the color of the circle
-    rgb_pixel_t pixel = {255, 0, 0, 0};
+// Function to draw a circle
+void draw_my_circle(int radius, int x, int y, bmpfile_t *bmp, rgb_pixel_t color) {
+    // Define the center of the circle
+    int centerX = x * 20;
+    int centerY = y * 20;
+
     // Loop over the pixels of the circle
-    for(int i = -radius; i <= radius; i++) {
-        for(int j = -radius; j <= radius; j++) {
-            // If distance is smaller, point is within the circle
-            if(sqrt(i*i + j*j) < radius) {
-                /*
-                * Color the pixel at the specified (x,y) position
-                * with the given pixel values
-                */
-                bmp_set_pixel(bmp, x*20 + i, y*20 + j, pixel);
+    for (int i = centerX - radius; i <= centerX + radius; i++) {
+        for (int j = centerY - radius; j <= centerY + radius; j++) {
+            if (pow(i - centerX, 2) + pow(j - centerY, 2) <= pow(radius, 2)) {
+                // Color the pixel at the specified (x,y) position with the given pixel values
+                bmp_set_pixel(bmp, i, j, color);
             }
         }
     }
 }
 
-// Function to clear the blue circle
-void cancel_blue_circle(int radius,int x,int y, bmpfile_t *bmp) {
+
+// Function to clear the circle
+void clear_circle(int radius, int x, int y, bmpfile_t *bmp) {
+    // Define the center of the circle
+    int centerX = x * 20;
+    int centerY = y * 20;
     // Define the color of the circle
-    rgb_pixel_t pixel = {255, 255, 255, 0};
+    rgb_pixel_t color = {255, 255, 255, 0}; // White
+
     // Loop over the pixels of the circle
-    for(int i = -radius; i <= radius; i++) {
-        for(int j = -radius; j <= radius; j++) {
-            // If distance is smaller, point is within the circle
-            if(sqrt(i*i + j*j) < radius) {
-                /*
-                * Color the pixel at the specified (x,y) position
-                * with the given pixel values
-                */
-                bmp_set_pixel(bmp,  x*20+i,y*20+  j, pixel);
+    for (int i = centerX - radius; i <= centerX + radius; i++) {
+        for (int j = centerY - radius; j <= centerY + radius; j++) {
+            // If the pixel is inside the circle..
+            if (pow(i - centerX, 2) + pow(j - centerY, 2) <= pow(radius, 2)) {
+                // Color the pixel at the specified (x,y) position with the given pixel values
+                bmp_set_pixel(bmp, i, j, color);
             }
         }
     }
@@ -123,7 +129,7 @@ int main(int argc, char *argv[])
 
     // Create the bitmap
     bmpfile_t *bmp;
-    bmp = bmp_create(width, height, depth);
+    bmp = bmp_create(WIDTH, HEIGHT, DEPTH);
     if (bmp == NULL) {
         printf("Error: unable to create bitmap\n");
         return 1;
@@ -208,7 +214,7 @@ int main(int argc, char *argv[])
             sem_wait(semaphore);
             
             // Write to the log file
-            sprintf(log_buffer, "<Process_A> Keyboard button pressed: %s\n", asctime(info));
+            sprintf(log_buffer, "PROCESS_A: Keyboard button pressed: %s\n", asctime(info));
             if (write(log_fd, log_buffer, strlen(log_buffer)) == -1)
             {
                 // If the file could not be opened, print an error message and exit
@@ -216,29 +222,33 @@ int main(int argc, char *argv[])
                 exit(1);
             }  
             
-            // Move  and draw the circle
+            // Move the circle
             move_circle(cmd);
+
+            // Draw the circle
             draw_circle();
-            
+ 
             // Cancel the circle
-            cancel_blue_circle(radius,x,y, bmp);
-            for (int i = 0; i < 1600; i++) {
-                for (int j = 0; j < 600; j++) {
-                ShmPTR->m[i][j] = 0;
-                }
-            }
+            clear_circle(radius,x,y, bmp);
+
+            // Set the shared memory to 0 for the pixels of the circle
+            memset(ShmPTR->m, 0, sizeof(ShmPTR->m));
             
+            // Choose the circle color
+            rgb_pixel_t color = {red, green, blue, alpha};
+
             // Draw the new circle position and update the shared memory
-            draw_blue_circle(radius,circle.x,circle.y, bmp);
-            
-            // Loop for checking all the pixels
-            for (int i = 0; i < 1600; i++) {
-                for (int j = 0; j < 600; j++) {
+            draw_my_circle(radius,circle.x,circle.y, bmp, color);
+
+            // Loop through the pixels of the bitmap
+            for (int i = 0; i < WIDTH; i++) {
+                for (int j = 0; j < HEIGHT; j++) {
                     // Get the pixel
                     rgb_pixel_t *pixel = bmp_get_pixel(bmp, i, j);
                     
-                    // If the pixel is blue, set the corresponding pixel in the shared memory to 1
-                    if ((pixel->blue == 255) && (pixel->red == 0) && (pixel->green==0) && (pixel->alpha==0)) {
+                    // Set the corresponding pixel in the shared memory to 1
+                    if ((pixel->blue == blue) && (pixel->red == red) && (pixel->green == green) 
+                            && (pixel->alpha == alpha)) {
                         ShmPTR->m[i][j] = 1; 
                     }                    
                 }
