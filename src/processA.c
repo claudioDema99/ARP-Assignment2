@@ -24,17 +24,20 @@ const int WIDTH = 1600;
 const int HEIGHT = 600;
 const int DEPTH = 4;
 
+// Define the struct of the shared memory
+struct shared
+{
+    int m[WIDTH][HEIGHT];
+};
+
 // Set the color of the circle (0 - 255)
 const u_int8_t red = 0;
 const u_int8_t green = 0;
 const u_int8_t blue = 255;
 const u_int8_t alpha = 0;
 
-// Define the struct of the shared memory
-struct shared
-{
-    int m[WIDTH][HEIGHT];
-};
+// Delcare circle radius
+const int RADIUS = 30;
 
 // Define the semaphores
 sem_t *semaphore;
@@ -62,7 +65,6 @@ void draw_my_circle(int radius, int x, int y, bmpfile_t *bmp, rgb_pixel_t color)
         }
     }
 }
-
 
 // Function to clear the circle
 void clear_circle(int radius, int x, int y, bmpfile_t *bmp) {
@@ -99,9 +101,6 @@ int main(int argc, char *argv[])
 
     // Initialize UI
     init_console_ui();
-
-    // Delcare circle radius
-    int radius = 30;
 
     // Variable declaration in order to access to shared memory
     key_t          ShmKEY;
@@ -229,7 +228,7 @@ int main(int argc, char *argv[])
             draw_circle();
  
             // Cancel the circle
-            clear_circle(radius,x,y, bmp);
+            clear_circle(RADIUS,x,y, bmp);
 
             // Set the shared memory to 0 for the pixels of the circle
             memset(ShmPTR->m, 0, sizeof(ShmPTR->m));
@@ -238,7 +237,7 @@ int main(int argc, char *argv[])
             rgb_pixel_t color = {red, green, blue, alpha};
 
             // Draw the new circle position and update the shared memory
-            draw_my_circle(radius,circle.x,circle.y, bmp, color);
+            draw_my_circle(RADIUS,circle.x,circle.y, bmp, color);
 
             // Loop through the pixels of the bitmap
             for (int i = 0; i < WIDTH; i++) {
