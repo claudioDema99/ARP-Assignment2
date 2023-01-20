@@ -31,10 +31,10 @@ struct shared
 };
 
 // Set the color of the circle (0 - 255)
-const u_int8_t red = 0;
-const u_int8_t green = 0;
-const u_int8_t blue = 255;
-const u_int8_t alpha = 0;
+const u_int8_t RED = 0;
+const u_int8_t GREEN = 0;
+const u_int8_t BLUE = 255;
+const u_int8_t ALPHA = 0;
 
 // Delcare circle radius
 const int RADIUS = 30;
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
             memset(ShmPTR->m, 0, sizeof(ShmPTR->m));
             
             // Choose the circle color
-            rgb_pixel_t color = {red, green, blue, alpha};
+            rgb_pixel_t color = {RED, GREEN, BLUE, ALPHA};
 
             // Draw the new circle position and update the shared memory
             draw_my_circle(RADIUS,circle.x,circle.y, bmp, color);
@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
                     rgb_pixel_t *pixel = bmp_get_pixel(bmp, i, j);
                     
                     // Set the corresponding pixel in the shared memory to 1
-                    if ((pixel->blue == blue) && (pixel->red == red) && (pixel->green == green) 
-                            && (pixel->alpha == alpha)) {
+                    if ((pixel->blue == BLUE) && (pixel->red == RED) && (pixel->green == GREEN) 
+                            && (pixel->alpha == ALPHA)) {
                         ShmPTR->m[i][j] = 1; 
                     }                    
                 }
