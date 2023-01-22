@@ -82,7 +82,7 @@ void clear_circle(int radius, int x, int y, bmpfile_t *bmp) {
 int main(int argc, char *argv[])
 {
     // Open the log file
-    if ((log_fd = open("log/processA.log",O_WRONLY|O_APPEND|O_CREAT, 0666)) == -1)
+    if ((log_fd = open("log/processAmmap.log",O_WRONLY|O_APPEND|O_CREAT, 0666)) == -1)
     {
         // If the file could not be opened, print an error message and exit
         perror("Error opening command file");
@@ -103,13 +103,16 @@ int main(int argc, char *argv[])
 
     // Open the shared memory
     shm_fd = shm_open("my_shm", O_RDWR | O_CREAT, 0666);
+    if (shm_fd == -1) {
+        perror("Error in shm_open");
+        exit(1);
+    }
 
     // Set the size of the shared memory
     ftruncate(shm_fd, sizeof(struct shared));
 
     // Map the shared memory to the memory space of the process
-    shm_ptr = mmap(0, sizeof(struct shared), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
+    shm_ptr = mmap(NULL, sizeof(struct shared), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (shm_ptr == MAP_FAILED) {
         perror("Error in mmap");
         exit(1);
@@ -128,10 +131,124 @@ int main(int argc, char *argv[])
     }
     
     // Open the semaphores
-    semaphore = sem_open("my_sem1", O_CREAT, 0666, 1);
-    semaphore2 = sem_open("my_sem2", O_CREAT, 0666, 1);
+    semaphore = sem_open("/my_sem1", O_CREAT, 0666, 1);
+    if (semaphore == SEM_FAILED) {
+        perror("Error in sem_open");
+        exit(1);
+    }
+    semaphore2 = sem_open("/my_sem2", O_CREAT, 0666, 1);
+    if (semaphore2 == SEM_FAILED) {
+        perror("Error in sem_open");
+        exit(1);
+    }
 
-    while (1) {
+    // Variable declaration in order to get the time
+    time_t rawtime;
+    struct tm *info;
+
+    while (TRUE) {
+
+        // Get current time
+        time(&rawtime);
+        info = localtime(&rawtime);
+
+        // Get the mouse event
+        int cmd = getch();
+
+        // Get the position of the circle
+        int x = circle.x;
+        int y = circle.y;
+
+        // If the user resize the window..
+        if(cmd == KEY_RESIZE) {
+            if(first_resize) {
+                first_resize = FALSE;
+            }
+            else {
+                reset_console_ui();
+            }
+        }
+
+        // Else, if user presses print button..
+        else if(cmd == KEY_MOUSE) {
+            if(getmouse(&event) == OK) {
+                if(check_button_pressed(print_btn, &event)) {
+                    mvprintw(LINES - 1, 1, "Print button pressed");
+
+                    // Write to the log file
+                    sprintf(log_buffer, "<Process_A> Print button pressed: %s\n", asctime(info));
+                    if (write(log_fd, log_buffer, strlen(log_buffer)) == -1)
+                    {
+                        // If the file could not be opened, print an error message and exit
+                        perror("Error writing to log file");
+                        exit(1);
+                    }
+
+                    // Save the bitmap
+                    bmp_save(bmp, "out/image.bmp");
+
+                    refresh();
+                    sleep(1);
+                    for(int j = 0; j < COLS - BTN_SIZE_X - 2; j++) {
+                        mvaddch(LINES - 1, j, ' ');
+                    }
+                }
+            }
+        }
+
+        // If input is an arrow key, move circle accordingly...
+        else if(cmd == KEY_LEFT || cmd == KEY_RIGHT || cmd == KEY_UP || cmd == KEY_DOWN) 
+        {
+            
+            // Wait for the semaphore
+            sem_wait(semaphore);
+            
+            // Write to the log file
+            sprintf(log_buffer, "PROCESS_A: Keyboard button pressed: %s\n", asctime(info));
+            if (write(log_fd, log_buffer, strlen(log_buffer)) == -1)
+            {
+                // If the file could not be opened, print an error message and exit
+                perror("Error writing to log file");
+                exit(1);
+            }  
+            
+            // Move the circle
+            move_circle(cmd);
+
+            // Draw the circle
+            draw_circle();
+ 
+            // Cancel the circle
+            clear_circle(RADIUS,x,y, bmp);
+
+            // Set the shared memory to 0 for the pixels of the circle
+            memset(shm_ptr->m, 0, sizeof(shm_ptr->m));
+            
+            // Choose the circle color
+            rgb_pixel_t color = {RED, GREEN, BLUE, ALPHA};
+
+            // Draw the new circle position and update the shared memory
+            draw_my_circle(RADIUS,circle.x,circle.y, bmp, color);
+
+            // Loop through the pixels of the bitmap
+            for (int i = 0; i < WIDTH; i++) {
+                for (int j = 0; j < HEIGHT; j++) {
+                    // Get the pixel
+                    rgb_pixel_t *pixel = bmp_get_pixel(bmp, i, j);
+                    
+                    // Set the corresponding pixel in the shared memory to 1
+                    if ((pixel->blue == BLUE) && (pixel->red == RED) && (pixel->green == GREEN) 
+                            && (pixel->alpha == ALPHA)) {
+                        shm_ptr->m[i][j] = 1; 
+                    }                    
+                }
+            }
+
+            // Signal the semaphore 2
+            sem_post(semaphore2);
+        }
+
+        /*
         // Wait for the semaphore
         sem_wait(semaphore);
 
@@ -144,6 +261,7 @@ int main(int argc, char *argv[])
 
         // Post the semaphore2 to signal that the operation is done
         sem_post(semaphore2);
+        */
     }
 
     // Close the semaphores and unlink the shared memory
