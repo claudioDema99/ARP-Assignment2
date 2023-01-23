@@ -18,7 +18,10 @@
 #define DEPTH 4
 
 // Define struct for shared memory and variables
-struct shared {
+struct shared
+{
+    int x;
+    int y;
     int m[WIDTH][HEIGHT];
 };
 
@@ -125,7 +128,7 @@ int main(int argc, char const *argv[]) {
     int center_cord = 0;
     int x_cord[600];
     int y_cord[600];
-    int y;
+    int cont;
     int y_old;
     int x_old;
 
@@ -189,7 +192,7 @@ int main(int argc, char const *argv[]) {
             center_cord = 0;
 
             int i, j;
-            y = 0;
+            cont = 0;
             flag = 0;
             
             // Get the coordinates of the circles
@@ -204,25 +207,27 @@ int main(int argc, char const *argv[]) {
                     // Get the coordinates of the circles from the shared memory
                     if (shm_ptr->m[i][j] == 1)
                     {
-                        x_cord[y] = j;
-                        y_cord[y] = i;
+                        x_cord[cont] = j;
+                        y_cord[cont] = i;
 
-                        if (x_cord[y] > x_cord[y-1]) {
+                        if (x_cord[cont] > x_cord[cont-1]) {
                             flag = 1;
                             break;
                         }
 
-                        y++;
+                        cont++;
                         break;
                     }
                 }
             }
 
             // Update the position of the center
-            center_cord = x_cord[y-1] + 30;
+            //center_cord = x_cord[cont-1] + 30;
+            center_cord = shm_ptr->y;
+            y_cord[cont-1] = shm_ptr->x;
 
             // Write the position of the center in the log file
-            sprintf(log_buffer, "<Process_B> Position of center updated: %s\n", asctime(info));
+            sprintf(log_buffer, "<Process_B> Position of center updated: %d - %d (%s)\n", center_cord, (int)y_cord[cont-1], asctime(info));
             if (write(log_fd, log_buffer, strlen(log_buffer)) == -1)
             {
                 perror("Error writing to log file");
@@ -230,7 +235,7 @@ int main(int argc, char const *argv[]) {
             }
 
             // Draw the circles
-            mvaddch(floor((int)(center_cord/20)),floor((int)(y_cord[y-1]/20)), '0');
+            mvaddch((int)center_cord,(int)y_cord[cont-1], '0');
 
             refresh();
 
@@ -241,10 +246,10 @@ int main(int argc, char const *argv[]) {
             cancel_blue_circle(30,y_old,x_old,bmp);
 
             // Draw the circle with the coordinates of the current loop
-            draw_blue_circle(30,y_cord[y-1],center_cord,bmp);   
+            draw_blue_circle(30,y_cord[cont-1],center_cord,bmp);   
 
             // Update the (previous) coordinates for the next loop
-            y_old = y_cord[y-1];
+            y_old = y_cord[cont-1];
             x_old = center_cord;           
         }
          

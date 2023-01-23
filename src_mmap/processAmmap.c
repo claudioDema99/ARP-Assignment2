@@ -20,6 +20,8 @@
 // Define the struct of the shared memory
 struct shared
 {
+    int x;
+    int y;
     int m[WIDTH][HEIGHT];
 };
 
@@ -204,7 +206,7 @@ int main(int argc, char *argv[])
             sem_wait(semaphore);
             
             // Write to the log file
-            sprintf(log_buffer, "PROCESS_A: Keyboard button pressed: %s\n", asctime(info));
+            sprintf(log_buffer, "PROCESS_A: Keyboard button pressed: %d - %d (%s)\n", circle.x, circle.y, asctime(info));
             if (write(log_fd, log_buffer, strlen(log_buffer)) == -1)
             {
                 // If the file could not be opened, print an error message and exit
@@ -229,6 +231,8 @@ int main(int argc, char *argv[])
 
             // Draw the new circle position and update the shared memory
             draw_my_circle(RADIUS,circle.x,circle.y, bmp, color);
+            shm_ptr->x = circle.x;
+            shm_ptr->y = circle.y;
 
             // Loop through the pixels of the bitmap
             for (int i = 0; i < WIDTH; i++) {
